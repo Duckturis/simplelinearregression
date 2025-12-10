@@ -1,28 +1,48 @@
-from sklearn.linear_model import LinearRegression
 import pandas as pd
-import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
 import streamlit as st
+import matplotlib.pyplot as plt
 
-X = [[1], [2], [3], [4]]
-y = [101, 102, 103, 104]
+df = pd.read_csv('indonesian_salary_by_region.csv')
 
-model=LinearRegression()
-st.title('Prediksi Gaji')
+st.title('Prediksi Gaji UMP/UMK Indonesia')
+st.markdown('---')
 
+region = df['REGION'].unique()
+
+input_region = st.selectbox('Pilih Provinsi:', options=region)
+
+df_selected= df[df['REGION']== input_region].copy()
+
+X = df_selected[['YEAR']]
+y = df_selected['SALARY']
+
+model = LinearRegression()
 model.fit(X, y)
-input_user=st.number_input("Masukkan value")
 
+min_year = df_selected['YEAR'].min()
+max_year = df_selected['YEAR'].max()
+input_year = st.number_input('Masukkan Tahun:', min_value= min_year, value=max_year+1)
 
-print(model.predict([[11]]))
-prediction= model.predict([[input_user]])
-plt.scatter(X, y)
-plt.plot(X, y)
-plt.scatter(20, prediction)
-plt.show()
-fig, ax=plt.subplots()
-prediksi_y=model.predict(X)
-ax.scatter(X, y)
-ax.plot(X, prediksi_y)
-ax.scatter([input_user], [prediction])
+prediction = model.predict([[input_year]])
+
+formated_salary= f'Rp {prediction[0]:,.0f}'.replace(",","_").replace(".",",").replace("_",".")
+
+st.metric(label=f'Prediksi Gaji di Provinsi {input_region} di Tahun {input_year}', value=formated_salary)
+
+st.subheader('Grafik Prediksi')
+
+fig, ax = plt.subplots()
+
+ax.scatter(X, y, label=f'Data Historis UMP/UMK {input_region} 1997-2025', color='blue')
+
+ax.plot(X, model.predict(X), color='red', label='Garis Regresi Linear')
+
+ax.scatter([input_year], [prediction], color="green", label=f'Prediksi Tahun {input_year}')
+
+ax.set_xlabel("Tahun")
+ax.set_ylabel("Gaji")
+ax.set_title(f'Tren Kenaikan Gaji di {input_region}')
+ax.legend()
+
 st.pyplot(fig)
-st.metric(label="Gaji", value=prediction)
